@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { db } from "./firebase";
+import { db, auth, provider } from "./firebase";
 import { collection, addDoc, getDocs } from "firebase/firestore";
+import { signInWithPopup, signOut } from "firebase/auth";
 
 function App() {
   const [listings, setListings] = useState([]);
@@ -16,6 +17,8 @@ function App() {
   const [searchLocation, setSearchLocation] = useState("");
   const [filterType, setFilterType] = useState("All");
 
+  const [user, setUser] = useState(null);
+
   const listingsCollection = collection(db, "listings");
 
   const addListing = async () => {
@@ -27,6 +30,7 @@ function App() {
       contact,
       type,
       city,
+      user: user?.displayName,
     });
 
     setTitle("");
@@ -45,6 +49,16 @@ function App() {
     setListings(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
   };
 
+  const login = async () => {
+    const result = await signInWithPopup(auth, provider);
+    setUser(result.user);
+  };
+
+  const logout = () => {
+    signOut(auth);
+    setUser(null);
+  };
+
   useEffect(() => {
     loadListings();
   }, []);
@@ -53,11 +67,20 @@ function App() {
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>🏠 Manila Apartment Finder</h1>
 
+      {user ? (
+        <div>
+          <p>Welcome, {user.displayName}</p>
+          <button onClick={logout}>Logout</button>
+        </div>
+      ) : (
+        <button onClick={login}>Login with Google</button>
+      )}
+
       <h2>Add Your Property</h2>
 
       <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} /><br /><br />
       <input placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} /><br /><br />
-      <input placeholder="Location (e.g. Sampaloc)" value={location} onChange={(e) => setLocation(e.target.value)} /><br /><br />
+      <input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} /><br /><br />
       <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} /><br /><br />
       <input placeholder="Contact Number" value={contact} onChange={(e) => setContact(e.target.value)} /><br /><br />
 
@@ -68,7 +91,11 @@ function App() {
 
       <input value={city} onChange={(e) => setCity(e.target.value)} /><br /><br />
 
-      <button onClick={addListing}>Submit</button>
+      {user ? (
+        <button onClick={addListing}>Submit</button>
+      ) : (
+        <p>Please login to post a listing</p>
+      )}
 
       <hr />
 
@@ -113,11 +140,10 @@ function App() {
             <h3>{item.title}</h3>
             <p>Type: {item.type}</p>
             <p>Price: {item.price}</p>
-            <p>
-              Location: {item.location}, {item.city}
-            </p>
+            <p>Location: {item.location}, {item.city}</p>
             <p>{item.description}</p>
             <p>Contact: {item.contact}</p>
+            <p>Posted by: {item.user}</p>
           </div>
         ))}
     </div>

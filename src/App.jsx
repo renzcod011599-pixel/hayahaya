@@ -20,7 +20,7 @@ import ListingCard from "./components/ListingCard";
 
 function App() {
   const [listings, setListings] = useState([]);
-  const [search, setSearch] = useState("");
+  const [image, setImage] = useState(null);
 
   const formRef = useRef(null);
 
@@ -32,7 +32,6 @@ function App() {
   const [type, setType] = useState("");
   const [purpose, setPurpose] = useState("");
   const [city, setCity] = useState("");
-  const [image, setImage] = useState(null);
 
   const [user, setUser] = useState(null);
   const [editId, setEditId] = useState(null);
@@ -81,7 +80,7 @@ function App() {
           type,
           purpose,
           city,
-          ...(imageUrl && { imageUrl }),
+          ...(imageUrl && { imageUrl })
         });
         setEditId(null);
       } else {
@@ -98,7 +97,7 @@ function App() {
           userName: user?.displayName,
           userId: user?.uid,
           featured: false,
-          createdAt: Date.now(),
+          createdAt: Date.now()
         });
       }
 
@@ -152,10 +151,10 @@ function App() {
       maxWidth: "700px",
       margin: "40px auto",
       padding: "25px",
-      fontFamily: "Arial",
-      background: "#fff",
-      borderRadius: "15px",
-      boxShadow: "0 5px 20px rgba(0,0,0,0.1)"
+      background: "#0f172a",
+      borderRadius: "12px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+      color: "#fff"
     }}>
       <h1 style={{ textAlign: "center" }}>🌴 Hayahaya</h1>
 
@@ -187,6 +186,7 @@ function App() {
         city={city}
         setCity={setCity}
         setImage={setImage}
+        image={image}
         editId={editId}
         addListing={addListing}
         user={user}
@@ -194,40 +194,11 @@ function App() {
 
       <hr />
 
-      <input
-        placeholder="🔍 Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px",
-          marginBottom: "15px",
-          borderRadius: "8px",
-          border: "1px solid #ccc"
-        }}
-      />
+      <h2>Listings</h2>
 
-      <h2>Available Listings</h2>
-
-      {listings
-        .filter((item) =>
-          item.title.toLowerCase().includes(search.toLowerCase()) ||
-          item.city.toLowerCase().includes(search.toLowerCase())
-        )
-        .sort((a, b) => {
-          if (b.featured !== a.featured) return b.featured - a.featured;
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        })
-        .map((item) => (
-          <ListingCard
-            key={item.id}
-            item={item}
-            user={user}
-            startEdit={startEdit}
-            deleteListing={deleteListing}
-            loadListings={loadListings}
-          />
-        ))}
+      {listings.map((item) => (
+        <ListingCard key={item.id} item={item} />
+      ))}
     </div>
   );
 }

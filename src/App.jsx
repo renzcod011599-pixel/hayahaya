@@ -6,17 +6,17 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 function App() {
   const [listings, setListings] = useState([]);
   const formRef = useRef(null);
+  const lastEditedRef = useRef(null);
 
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [contact, setContact] = useState("");
-  const [type, setType] = useState("Room");
-  const [city, setCity] = useState("Manila");
 
-  const [searchLocation, setSearchLocation] = useState("");
-  const [filterType, setFilterType] = useState("All");
+  const [type, setType] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [city, setCity] = useState("");
 
   const [user, setUser] = useState(null);
   const [editId, setEditId] = useState(null);
@@ -31,6 +31,11 @@ function App() {
   };
 
   const addListing = async () => {
+    if (!title || !price || !location || !contact || !type || !purpose || !city) {
+      alert("Please fill all required fields");
+      return;
+    }
+
     if (editId) {
       const listingDoc = doc(db, "listings", editId);
 
@@ -41,10 +46,29 @@ function App() {
         description,
         contact,
         type,
+        purpose,
         city,
       });
 
+      const updatedId = editId;
       setEditId(null);
+
+      setTitle("");
+      setPrice("");
+      setLocation("");
+      setDescription("");
+      setContact("");
+      setType("");
+      setPurpose("");
+      setCity("");
+
+      loadListings();
+
+      setTimeout(() => {
+        const el = document.getElementById(updatedId);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+
     } else {
       await addDoc(listingsCollection, {
         title,
@@ -53,22 +77,25 @@ function App() {
         description,
         contact,
         type,
+        purpose,
         city,
         userName: user?.displayName,
         userId: user?.uid,
-        featured: false, // ⭐ monetization field
+        featured: false,
+        createdAt: Date.now(),
       });
+
+      setTitle("");
+      setPrice("");
+      setLocation("");
+      setDescription("");
+      setContact("");
+      setType("");
+      setPurpose("");
+      setCity("");
+
+      loadListings();
     }
-
-    setTitle("");
-    setPrice("");
-    setLocation("");
-    setDescription("");
-    setContact("");
-    setType("Room");
-    setCity("Manila");
-
-    loadListings();
   };
 
   const loadListings = async () => {
@@ -77,6 +104,8 @@ function App() {
   };
 
   const deleteListing = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this listing?")) return;
+
     const listingDoc = doc(db, "listings", id);
     await deleteDoc(listingDoc);
     loadListings();
@@ -88,21 +117,33 @@ function App() {
     setLocation(item.location);
     setDescription(item.description);
     setContact(item.contact);
-    setType(item.type);
-    setCity(item.city);
+    setType(item.type || "");
+    setPurpose(item.purpose || "");
+    setCity(item.city || "");
 
     setEditId(item.id);
+    lastEditedRef.current = item.id;
 
     formRef.current.scrollIntoView({ behavior: "smooth" });
   };
 
-  // ⭐ Toggle featured (for testing monetization)
-  const toggleFeatured = async (item) => {
-    const listingDoc = doc(db, "listings", item.id);
-    await updateDoc(listingDoc, {
-      featured: !item.featured,
-    });
-    loadListings();
+  const cancelEdit = () => {
+    const id = lastEditedRef.current;
+
+    setEditId(null);
+    setTitle("");
+    setPrice("");
+    setLocation("");
+    setDescription("");
+    setContact("");
+    setType("");
+    setPurpose("");
+    setCity("");
+
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 200);
   };
 
   const login = async () => {
@@ -126,18 +167,11 @@ function App() {
   }, []);
 
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "auto",
-        padding: "20px",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1 style={{ textAlign: "center" }}>🏠 Apartment Finder PH</h1>
+    <div style={{ maxWidth: "600px", margin: "auto", padding: "20px", fontFamily: "Arial" }}>
+      <h1 style={{ textAlign: "center" }}>🌴 Hayahaya</h1>
 
       {user ? (
-        <div style={{ marginBottom: "15px" }}>
+        <div>
           <p>Welcome, {user.displayName}</p>
           <button onClick={logout}>Logout</button>
         </div>
@@ -145,62 +179,62 @@ function App() {
         <button onClick={login}>Login with Google</button>
       )}
 
-      <h2 ref={formRef}>
-        {editId ? "✏️ Edit Listing" : "Add Your Property"}
-      </h2>
+      <h2 ref={formRef}>{editId ? "✏️ Edit Listing" : "Add Your Property"}</h2>
 
       <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
       <input placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} style={inputStyle} />
-      <input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} style={inputStyle} />
+
+      <input placeholder="House No., Floor, Street" value={location} onChange={(e) => setLocation(e.target.value)} style={inputStyle} />
+
+      <select value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle}>
+        <option value="" disabled>City</option>
+        <option value="Manila">Manila</option>
+        <option value="Quezon City">Quezon City</option>
+        <option value="Caloocan">Caloocan</option>
+        <option value="Las Piñas">Las Piñas</option>
+        <option value="Makati">Makati</option>
+        <option value="Malabon">Malabon</option>
+        <option value="Mandaluyong">Mandaluyong</option>
+        <option value="Marikina">Marikina</option>
+        <option value="Muntinlupa">Muntinlupa</option>
+        <option value="Navotas">Navotas</option>
+        <option value="Parañaque">Parañaque</option>
+        <option value="Pasay">Pasay</option>
+        <option value="Pasig">Pasig</option>
+        <option value="San Juan">San Juan</option>
+        <option value="Taguig">Taguig</option>
+        <option value="Valenzuela">Valenzuela</option>
+        <option value="Pateros">Pateros</option>
+      </select>
+
       <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} />
+
       <input placeholder="Contact Number" value={contact} onChange={(e) => setContact(e.target.value)} style={inputStyle} />
 
       <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+        <option value="" disabled>Property Type</option>
         <option value="Room">Room</option>
         <option value="Apartment">Apartment</option>
+        <option value="House">House</option>
+        <option value="Lot">Lot</option>
+        <option value="House & Lot">House & Lot</option>
+        <option value="Vehicle">Vehicle</option>
       </select>
 
-      <input value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle} />
+      <select value={purpose} onChange={(e) => setPurpose(e.target.value)} style={inputStyle}>
+        <option value="" disabled>For Rent / For Sale</option>
+        <option value="Rent">For Rent</option>
+        <option value="Sale">For Sale</option>
+      </select>
 
       {user ? (
         <>
-          <button
-            onClick={addListing}
-            style={{
-              width: "100%",
-              padding: "12px",
-              backgroundColor: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-            }}
-          >
+          <button onClick={addListing} style={{ width: "100%", padding: "12px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "5px" }}>
             {editId ? "Update Listing" : "Submit"}
           </button>
 
           {editId && (
-            <button
-              onClick={() => {
-                setEditId(null);
-                setTitle("");
-                setPrice("");
-                setLocation("");
-                setDescription("");
-                setContact("");
-                setType("Room");
-                setCity("Manila");
-              }}
-              style={{
-                width: "100%",
-                marginTop: "10px",
-                padding: "12px",
-                backgroundColor: "#ccc",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={cancelEdit} style={{ width: "100%", marginTop: "10px", padding: "12px", backgroundColor: "#ccc", border: "none", borderRadius: "5px" }}>
               Cancel
             </button>
           )}
@@ -211,71 +245,36 @@ function App() {
 
       <hr />
 
-      <h2>Search</h2>
-
-      <input
-        placeholder="Search location"
-        value={searchLocation}
-        onChange={(e) => setSearchLocation(e.target.value)}
-        style={inputStyle}
-      />
-
-      <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={inputStyle}>
-        <option value="All">All</option>
-        <option value="Room">Room</option>
-        <option value="Apartment">Apartment</option>
-      </select>
-
-      <hr />
-
       <h2>Available Listings</h2>
 
-      {[...listings]
-        .sort((a, b) => (b.featured === true) - (a.featured === true))
-        .filter((item) => {
-          const matchLocation = (item.location || "")
-            .toLowerCase()
-            .includes(searchLocation.toLowerCase());
-
-          const matchType =
-            filterType === "All" || item.type === filterType;
-
-          return matchLocation && matchType;
+      {listings
+        .sort((a, b) => {
+          if (b.featured !== a.featured) return b.featured - a.featured;
+          return (b.createdAt || 0) - (a.createdAt || 0);
         })
         .map((item) => (
-          <div
-            key={item.id}
-            style={{
-              border: "1px solid #ddd",
-              padding: "15px",
-              borderRadius: "10px",
-              marginBottom: "15px",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-            }}
-          >
-            {item.featured && (
-              <p style={{ color: "orange", fontWeight: "bold" }}>
-                ⭐ Featured
-              </p>
-            )}
-
+          <div id={item.id} key={item.id} style={{ border: "1px solid #ddd", padding: "15px", marginBottom: "10px" }}>
             <h3>{item.title}</h3>
-            <p>Type: {item.type}</p>
+
+            {item.featured && <span>⭐ Featured</span>}
+
+            <p>{item.purpose} • {item.type}</p>
             <p>Price: {item.price}</p>
-            <p>Location: {item.location}, {item.city}</p>
+            <p>{item.location}, {item.city}</p>
             <p>{item.description}</p>
             <p>Contact: {item.contact}</p>
-            <p>Posted by: {item.userName}</p>
 
             {user && user.uid === item.userId && (
               <>
-                <button onClick={() => startEdit(item)} style={{ marginRight: "10px" }}>
-                  Edit
-                </button>
-                <button onClick={() => deleteListing(item.id)} style={{ marginRight: "10px" }}>
-                  Delete
-                </button>
-                <button onClick={() => toggleFeatured(item)}>
+                <button onClick={() => startEdit(item)}>Edit</button>
+                <button onClick={() => deleteListing(item.id)}>Delete</button>
+                <button
+                  onClick={async () => {
+                    const listingDoc = doc(db, "listings", item.id);
+                    await updateDoc(listingDoc, { featured: !item.featured });
+                    loadListings();
+                  }}
+                >
                   {item.featured ? "Unfeature" : "Feature"}
                 </button>
               </>
